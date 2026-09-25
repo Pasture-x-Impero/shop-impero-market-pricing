@@ -1,0 +1,78 @@
+name: Konkurrent-prising
+
+# Egen workflow, adskilt fra tdsynnex-sync.yml/also-sync.yml — helt annet
+# ansvar (utsalgspris basert på konkurrenter, ikke innkjøpspris fra
+# distributører), egne avhengigheter (Playwright — kun for Elkjøp, se under),
+# og en mer skjør/uforutsigbar risikoprofil (konkurrent-sider kan endre
+# struktur eller innføre bot-beskyttelse når som helst) som ikke skal kunne
+# påvirke den ellers stabile innkjøps-synken. Se CLAUDE.md.
+on:
+  schedule:
+    # Ukentlig, mandag kl. 06:30 CET (05:30 UTC) — endret fra daglig
+    # 2026-09-14: katalogen med registrert EAN
+    # vokste samme dag fra 45 til 845 produkter (Samsung/Philips/Logitech/
+    # HP/Lenovo-utvidelsen, se CLAUDE.md), og konkurrentprisene endrer seg
+    # ikke fort nok til å rettferdiggjøre en daglig, ~1,5-2 timers kjøring
+    # mot flere bot-beskyttede sider. Var allerede en egen workflow adskilt
+    # fra tdsynnex-sync.yml/also-sync.yml — kun kadencen endres her.
+    - cron: '30 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: >-
+          Valgfritt: kommaseparert liste av EAN og/eller MPN. Kjører motoren
+          kun for disse produktene (punktsjekk, ~1 min) i stedet for hele
+          utvalget (~1,5 t). Kjørelogg-statistikken i admin oppdateres ikke
+          i filtrert modus.
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  price:
+    name: Sett konkurransedyktige utsalgspriser
+    runs-on: ubuntu-latest
+    # 2026-09-14: Elkjøp fjernet fra pricing.ts sin løkke (bekreftet 0%
+    # treffrate, ren bot-blokkering — se CLAUDE.md), noe som kutter estimert
+    # kjøretid for 845 produkter fra ~6 timer til ~1,5-2 timer. 180 min
+    # beholdes som god slingringsmonn fremfor å stramme inn igjen med en gang.
+    timeout-minutes: 180
+
+    steps:
+      - name: Sjekk ut kode
+        uses: actions/checkout@v4
+
+      - name: Sett opp Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Dustin ble byttet fra Playwright til ren fetch() 2026-09-17 (se
+      # dustin.ts) — Power/Dustin/Komplett/Eplehuset er nå alle fetch()-
+      # baserte, ingen av dem trenger nettleseren lenger. Playwright
+      # installeres likevel fortsatt her: Elkjøp sin fetcher (elkjop.ts) er
+      # urørt og deler samme browser-fetch.ts-hjelper, klar til å kobles inn
+      # igjen den dagen Elkjøp fungerer fra CI (se CLAUDE.md "Elkjøp parkert").
+      - name: Installer avhengigheter (inkl. Playwright for Elkjøp, i dvale)
+        run: |
+          npm ci
+          npx playwright install chromium --with-deps
+
+      - name: Kjør prisings-motor
+        run: npm run pricing
+        env:
+          PRICE_SYNC_SECRET: ${{ secrets.PRICE_SYNC_SECRET }}
+          PRICING_ONLY: ${{ inputs.only }}
+
+      - name: Send Slack-varsel ved feil
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "⚠️ *Konkurrent-prising feilet* — ${{ github.workflow }} på ${{ github.ref }}\nSe detaljer: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
