@@ -6,7 +6,7 @@
 
 ## Hva er dette?
 
-GitHub Actions workflow som ukentlig henter konkurrentpriser (Power, Dustin, Komplett,
+GitHub Actions workflow som to ganger i uken henter konkurrentpriser (Power, Dustin, Komplett,
 Eplehuset) for alle synlige produkter i shop.impero.no og sender dem rå til Edge
 Functions i Lovable prosjektet `impero-shop`. **Utsalgsprisen regnes ut på Lovable
 siden** (`apply_competitor_pricing`), som har marginer, undercut beløp og admin sine
@@ -31,7 +31,7 @@ fallback. Endringer i dem må gjøres begge steder.
 - `src/fetchers/elkjop.ts` + `browser-fetch.ts` — Elkjøp via Playwright. Ikke koblet inn,
   se under.
 - `src/types.ts` — `MarketPrice` m.fl.
-- `.github/workflows/market-pricing.yml` — ukentlig mandag 05:30 UTC, `workflow_dispatch`
+- `.github/workflows/market-pricing.yml` — mandag og torsdag 05:30 UTC, `workflow_dispatch`
   med valgfritt `only` input. Installerer Playwright for Elkjøp sin skyld selv om den er
   parkert.
 

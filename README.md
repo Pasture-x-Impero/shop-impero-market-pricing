@@ -2,7 +2,7 @@
 
 Konkurrentpris innsamler for shop.impero.no, kjørt fra GitHub Actions. Sjekker
 konkurrentenes priser (Power, Dustin, Komplett, Eplehuset) for alle synlige produkter
-ukentlig og sender dem rå til Edge Functions i Lovable prosjektet. Selve utsalgsprisen
+to ganger i uken og sender dem rå til Edge Functions i Lovable prosjektet. Selve utsalgsprisen
 regnes ut på Lovable siden. Dette repoet har ingen Supabase nøkkel og ingen prisregel,
 kun den delte hemmeligheten `PRICE_SYNC_SECRET`.
 
@@ -14,7 +14,7 @@ Se `CLAUDE.md` for arkitektur, kontrakter og tekniske lærdommer.
 ## Arkitektur
 
 ```
-market-pricing.yml (ukentlig, mandag kl. 05:30 UTC, eller manuelt)
+market-pricing.yml (mandag og torsdag kl. 05:30 UTC, eller manuelt)
 │
 ├── price-sync-visible-products (les)  → alle synlige produkter med EAN/MPN
 │     og kilder admin har ekskludert
@@ -59,7 +59,7 @@ npm run typecheck
 
 | Workflow | Trigger | Hva den gjør |
 |---|---|---|
-| `market-pricing.yml` | Ukentlig mandag kl. 05:30 UTC, eller manuelt med valgfritt `only` input (kommaseparert EAN/MPN) | Konkurrentpris innsamling. `only` hopper over run log, så admin sin "siste kjøring" fortsatt speiler en full kjøring. |
+| `market-pricing.yml` | Mandag og torsdag kl. 05:30 UTC, eller manuelt med valgfritt `only` input (kommaseparert EAN/MPN) | Konkurrentpris innsamling. `only` hopper over run log, så admin sin "siste kjøring" fortsatt speiler en full kjøring. |
 
 Full kjøring tar ca. 1,5 time for ~850 produkter. `timeout-minutes: 180`.
 

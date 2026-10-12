@@ -15,7 +15,9 @@ on:
     # ikke fort nok til å rettferdiggjøre en daglig, ~1,5-2 timers kjøring
     # mot flere bot-beskyttede sider. Var allerede en egen workflow adskilt
     # fra tdsynnex-sync.yml/also-sync.yml — kun kadencen endres her.
-    - cron: '30 5 * * 1'
+    # 2026-10-12: torsdag lagt til, så prismatchen i butikken følger markedet
+    # tettere og én feilet kjøring ikke gir ti dager gamle priser.
+    - cron: '30 5 * * 1,4'
   workflow_dispatch:
     inputs:
       only:
